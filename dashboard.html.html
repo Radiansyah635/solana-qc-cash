@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kas QC Shift - Solana Style</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background: linear-gradient(to bottom, #000000, #0f0f0f);
+      min-height: 100vh;
+    }
+    .solana-card {
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      transition: all 0.3s ease;
+    }
+    .solana-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(139, 92, 246, 0.2);
+    }
+    .neon-text {
+      text-shadow: 0 0 8px rgba(139, 92, 246, 0.8);
+    }
+  </style>
+</head>
+<body class="text-gray-100 font-sans">
+  <!-- Navbar -->
+  <nav class="bg-black/80 p-4 border-b border-purple-900/50 sticky top-0 z-50">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold bg-gradient-to-r from-purple-400 to-green-400 bg-clip-text text-transparent">
+        Kas QC Shift
+      </h1>
+      <div class="flex items-center space-x-4">
+        <span id="user-email" class="text-sm text-gray-300"></span>
+        <button id="logout-btn" class="px-4 py-2 bg-red-600/80 hover:bg-red-500/90 rounded-lg text-sm">
+          Logout
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="container mx-auto p-4 pb-20">
+    <!-- Dashboard Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Sidebar -->
+      <div class="lg:col-span-1 space-y-6">
+        <!-- User Profile -->
+        <div class="solana-card bg-gray-900/50 rounded-xl p-6">
+          <div class="flex items-center space-x-4">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-purple-600 to-green-500 flex items-center justify-center text-xl font-bold">
+              <span id="user-initial">U</span>
+            </div>
+            <div>
+              <h3 id="user-name" class="font-medium">User Name</h3>
+              <p id="user-role" class="text-sm text-gray-400">QC Team</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="solana-card bg-gray-900/50 rounded-xl p-6">
+          <h3 class="font-medium mb-4 text-purple-400">Menu Cepat</h3>
+          <ul class="space-y-3">
+            <li>
+              <button id="show-kas" class="w-full text-left p-3 hover:bg-gray-800/50 rounded-lg flex items-center">
+                <span class="mr-3">💰</span> Kas & Transaksi
+              </button>
+            </li>
+            <li>
+              <button id="show-agenda" class="w-full text-left p-3 hover:bg-gray-800/50 rounded-lg flex items-center">
+                <span class="mr-3">📅</span> Agenda QC
+              </button>
+            </li>
+            <li>
+              <button id="show-sosial" class="w-full text-left p-3 hover:bg-gray-800/50 rounded-lg flex items-center">
+                <span class="mr-3">💬</span> Sosial Media
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Balance Summary -->
+        <div class="solana-card bg-gradient-to-br from-purple-900/30 to-green-900/20 rounded-xl p-6">
+          <h3 class="font-medium mb-2">Total Saldo</h3>
+          <p id="total-saldo" class="text-3xl font-bold font-mono">Rp 0</p>
+          <div class="mt-4">
+            <canvas id="balance-chart" height="120"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content Area -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Kas Section -->
+        <section id="kas-section" class="solana-card bg-gray-900/50 rounded-xl p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold">Kas & Transaksi</h2>
+            <button id="add-transaction-btn" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-green-500 rounded-lg text-sm">
+              + Tambah Transaksi
+            </button>
+          </div>
+          
+          <!-- Transaction Form (Hidden) -->
+          <form id="transaction-form" class="hidden space-y-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm mb-1">Jenis</label>
+                <select id="transaction-type" class="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                  <option value="masuk">Kas Masuk</option>
+                  <option value="keluar">Kas Keluar</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm mb-1">Jumlah (Rp)</label>
+                <input type="number" id="transaction-amount" class="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm mb-1">Keterangan</label>
+              <input type="text" id="transaction-desc" class="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none">
+            </div>
+            <div class="flex justify-end space-x-3">
+              <button type="button" id="cancel-transaction-btn" class="px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg">
+                Batal
+              </button>
+              <button type="submit" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-green-500 hover:opacity-90 rounded-lg">
+                Simpan
+              </button>
+            </div>
+          </form>
+
+          <!-- Transactions List -->
+          <div id="transactions-list" class="space-y-3">
+            <!-- Data akan dimuat di sini -->
+            <div class="text-center py-10 text-gray-500">
+              <p>Memuat data transaksi...</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Agenda Section -->
+        <section id="agenda-section" class="solana-card bg-gray-900/50 rounded-xl p-6 hidden">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold">Agenda QC</h2>
+            <button id="add-agenda-btn" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-green-500 rounded-lg text-sm">
+              + Tambah Agenda
+            </button>
+          </div>
+
+          <!-- Agenda Form (Hidden) -->
+          <form id="agenda-form" class="hidden space-y-4 mb-6">
+            <div>
+              <label class="block text-sm mb-1">Judul</label>
+              <input type="text" id="agenda-title" class="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-sm mb-1">Deskripsi</label>
+              <textarea id="agenda-desc" rows="3" class="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm mb-1">Lampiran (Opsional)</label>
+              <input type="file" id="agenda-file" class="hidden">
+              <div class="flex items-center">
+                <button type="button" id="upload-agenda-btn" class="px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg mr-3">
+                  Pilih File
+                </button>
+                <span id="agenda-file-name" class="text-sm text-gray-400">Belum ada file</span>
+              </div>
+            </div>
+            <div class="flex justify-end space-x-3">
+              <button type="button" id="cancel-agenda-btn" class="px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg">
+                Batal
+              </button>
+              <button type="submit" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-green-500 hover:opacity-90 rounded-lg">
+                Simpan
+              </button>
+            </div>
+          </form>
+
+          <!-- Agenda List -->
+          <div id="agenda-list" class="space-y-4">
+            <!-- Data akan dimuat di sini -->
+            <div class="text-center py-10 text-gray-500">
+              <p>Memuat data agenda...</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sosial Media Section -->
+        <section id="sosial-section" class="solana-card bg-gray-900/50 rounded-xl p-6 hidden">
+          <h2 class="text-xl font-semibold mb-6">Sosial Media QC</h2>
+
+          <!-- Post Form -->
+          <form id="post-form" class="space-y-4 mb-6">
+            <div>
+              <textarea id="post-content" rows="3" placeholder="Apa yang kamu pikirkan hari ini?" class="w-full px-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"></textarea>
+            </div>
+            <div class="flex justify-between items-center">
+              <div class="flex items-center">
+                <input type="file" id="post-image" accept="image/*" class="hidden">
+                <button type="button" id="upload-image-btn" class="px-4 py-2 bg-gray-700/50 hover:bg-gray-600/50 rounded-lg mr-3">
+                  📷 Lampirkan Gambar
+                </button>
+                <span id="image-name" class="text-sm text-gray-400 hidden"></span>
+              </div>
+              <button type="submit" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-green-500 hover:opacity-90 rounded-lg">
+                Posting
+              </button>
+            </div>
+          </form>
+
+          <!-- Posts List -->
+          <div id="posts-list" class="space-y-6">
+            <!-- Data akan dimuat di sini -->
+            <div class="text-center py-10 text-gray-500">
+              <p>Memuat postingan terbaru...</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <!-- Appwrite SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/appwrite@10.0.0"></script>
+  
+  <script>
+    // =============================================
+    // APPWRITE CONFIGURATION
+    // =============================================
+    const client = new Appwrite.Client();
+    client
+      .setEndpoint('https://fra.cloud.appwrite.io/v1')
+      .setProject('686f8911000c95bfb037');
+
+    const account = new Appwrite.Account(client);
+    const databases = new Appwrite.Databases(client);
+    const storage = new Appwrite.Storage(client);
+
+    // Database and Collection IDs
+    const DB_ID = 'kas_qc_shift';
+    const COLLECTIONS = {
+      USERS: 'user',
+      KAS: 'transactions',
+      AGENDA: 'agenda',
+      POSTS: 'posts',
+      COMMENTS: 'comments'
+    };
+    const BUCKET_ID = 'qc_files';
+
+    // =============================================
+    // AUTHENTICATION FUNCTIONS
+    // =============================================
+    async function checkAuthState() {
+      try {
+        const user = await account.get();
+        updateUserUI(user);
+        loadInitialData();
+      } catch (error) {
+        window.location.href = 'index.html';
+      }
+    }
+
+    function updateUserUI(user) {
+      document.getElementById('user-email').textContent = user.email;
+      document.getElementById('user-name').textContent = user.name || user.email;
+      document.getElementById('user-initial').textContent = user.name ? user.name.charAt(0).toUpperCase() : user.email.charAt(0).toUpperCase();
+      
+      // Check if user is admin
+      if (user.labels && user.labels.includes('admin')) {
+        document.getElementById('user-role').textContent = 'QC Admin';
+      }
+    }
+
+    // =============================================
+    // UI EVENT HANDLERS
+    // =============================================
+    // Navigation
+    document.getElementById('show-kas').addEventListener('click', () => {
+      document.getElementById('kas-section').classList.remove('hidden');
+      document.getElementById('agenda-section').classList.add('hidden');
+      document.getElementById('sosial-section').classList.add('hidden');
+    });
+
+    document.getElementById('show-agenda').addEventListener('click', () => {
+      document.getElementById('kas-section').classList.add('hidden');
+      document.getElementById('agenda-section').classList.remove('hidden');
+      document.getElementById('sosial-section').classList.add('hidden');
+      loadAgenda();
+    });
+
+    document.getElementById('show-sosial').addEventListener('click', () => {
+      document.getElementById('kas-section').classList.add('hidden');
+      document.getElementById('agenda-section').classList.add('hidden');
+      document.getElementById('sosial-section').classList.remove('hidden');
+      loadPosts();
+    });
+
+    // Logout
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      try {
+        await account.deleteSession('current');
+        window.location.href = 'index.html';
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    });
+
+    // File Upload Buttons
+    document.getElementById('upload-image-btn').addEventListener('click', () => {
+      document.getElementById('post-image').click();
+    });
+
+    document.getElementById('upload-agenda-btn').addEventListener('click', () => {
+      document.getElementById('agenda-file').click();
+    });
+
+    document.getElementById('post-image').addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        document.getElementById('image-name').textContent = e.target.files[0].name;
+        document.getElementById('image-name').classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('agenda-file').addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        document.getElementById('agenda-file-name').textContent = e.target.files[0].name;
+      } else {
+        document.getElementById('agenda-file-name').textContent = 'Belum ada file';
+      }
+    });
+
+    // =============================================
+    // INITIAL LOAD
+    // =============================================
+    function loadInitialData() {
+      loadTransactions();
+      initBalanceChart();
+    }
+
+    // Initialize the page
+    checkAuthState();
+  </script>
+</body>
+</html>
